@@ -1,0 +1,51 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Open Discord in Chrome</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <script>
+      (function () {
+        // Parse guild & channel from query string
+        const params = new URLSearchParams(window.location.search);
+        const guild = params.get('guild');
+        const channel = params.get('channel');
+
+        if (!guild || !channel) {
+          console.log('Missing guild or channel id');
+          return;
+        }
+
+        const targetHttps = `https://discord.com/channels/${guild}/${channel}`;
+        // Turn https://discord.com/... into googlechromes://discord.com/...
+        const chromeUrl =
+          'googlechromes://' + targetHttps.replace(/^https?:\/\//, '');
+
+        // Try to open Chrome
+        window.location = chromeUrl;
+
+        // Fallback: after ~1s, open normal HTTPS (web Discord) in this browser
+        setTimeout(() => {
+          window.location = targetHttps;
+        }, 800);
+      })();
+    </script>
+  </head>
+  <body>
+    <p>
+      Trying to open in Chrome…
+      If nothing happens, <a id="fallback-link">tap here</a>.
+    </p>
+    <script>
+      (function () {
+        const params = new URLSearchParams(window.location.search);
+        const guild = params.get('guild');
+        const channel = params.get('channel');
+        if (guild && channel) {
+          document.getElementById('fallback-link').href =
+            `https://discord.com/channels/${guild}/${channel}`;
+        }
+      })();
+    </script>
+  </body>
+</html>
