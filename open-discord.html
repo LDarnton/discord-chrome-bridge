@@ -6,7 +6,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <style>
-    /* === core of your popup style, trimmed to what we need === */
     :root{
       --bg: #0f172a;
       --panel: #111827;
@@ -52,15 +51,14 @@
       gap:10px;
     }
 
-    .card-icon{
-      width:32px;
-      height:32px;
-      border-radius:999px;
-      display:grid;
-      place-items:center;
-      background:rgba(59,130,246,.22);
-      border:1px solid rgba(96,165,250,.6);
-      font-size:18px;
+    .spinner{
+      width:18px;
+      height:18px;
+      border-radius:50%;
+      border:2px solid rgba(148,163,184,.45);
+      border-top-color:var(--accent-2);
+      animation: spin 0.9s linear infinite;
+      flex-shrink:0;
     }
 
     .card-title{
@@ -135,16 +133,6 @@
       transform: translateY(1px);
     }
 
-    .spinner{
-      width:18px;
-      height:18px;
-      border-radius:50%;
-      border:2px solid rgba(148,163,184,.45);
-      border-top-color:var(--accent-2);
-      animation: spin 0.9s linear infinite;
-      flex-shrink:0;
-    }
-
     @keyframes spin{
       to{ transform:rotate(360deg); }
     }
@@ -164,9 +152,8 @@
       </div>
 
       <div class="card-body">
-        <div>
-          <div class="status-line" id="status">Preparing redirect…</div>
-        </div>
+        <div class="status-line" id="status">Preparing redirect…</div>
+
         <div>
           <div class="card-subtitle">Target URL</div>
           <div class="url-preview" id="urlPreview">–</div>
@@ -197,18 +184,13 @@
         }
       }
 
-      // 1) Get target from ?u= or ?url= or from hash (#https://...)
+      // 1) Read target from ?u= / ?url= or from hash (#https://...)
       const params = new URLSearchParams(window.location.search);
       let target = params.get('u') || params.get('url') || '';
 
       if (!target && window.location.hash && window.location.hash.length > 1) {
         // e.g. #https://discord.com/...
         target = window.location.hash.slice(1);
-        try {
-          target = decodeURIComponent(target);
-        } catch (_) {
-          // if it wasn't encoded it's still fine
-        }
       }
 
       if (!target) {
@@ -219,7 +201,13 @@
         return;
       }
 
-      // Make sure it’s https://… if someone passed just discord.com/...
+      try {
+        // If it was encoded, this will decode it; if not, it’s fine.
+        target = decodeURIComponent(target);
+      } catch (e) {
+        // ignore
+      }
+
       if (!/^https?:\/\//i.test(target)) {
         target = 'https://' + target.replace(/^\/+/, '');
       }
@@ -228,32 +216,18 @@
       fallbackLinkEl.href = target;
       fallbackLinkEl.textContent = 'Open in browser';
 
-      // 2) Build the actual redirect URL based on platform
-      const ua = navigator.userAgent || navigator.vendor || '';
-      const isIOS = /iphone|ipad|ipod/i.test(ua);
-      const isChromeOnIOS = /CriOS/i.test(ua);
-
-      let redirectUrl = target;
-
-      // On iOS Chrome, use googlechromes:// so it stays in Chrome
-      if (isIOS && isChromeOnIOS) {
-        redirectUrl = 'googlechromes://' + target.replace(/^https?:\/\//i, '');
-        subtitleEl.textContent = 'Using Chrome on iOS – forcing the link to stay in Chrome.';
-      } else {
-        subtitleEl.textContent = 'Opening the Discord link in your browser.';
-      }
-
+      subtitleEl.textContent = 'Opening the Discord link in your browser.';
       setStatus('Redirecting you now…', false);
 
-      // 3) Do the redirect (slight delay so the user sees the page)
+      // 2) Do the redirect after a tiny delay so the UI paints
       setTimeout(function () {
         try {
-          window.location.replace(redirectUrl);
+          window.location.href = target;
         } catch (e) {
-          // If replace fails for some reason, fall back to href
-          window.location.href = redirectUrl;
+          setStatus('Redirect failed. Use the button below.', true);
+          // leave fallback link visible
         }
-      }, 500);
+      }, 300);
     })();
   </script>
 </body>
