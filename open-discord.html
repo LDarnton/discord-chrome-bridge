@@ -184,12 +184,29 @@
         }
       }
 
-      // 1) Read target from ?u= / ?url= or from hash (#https://...)
-      const params = new URLSearchParams(window.location.search);
-      let target = params.get('u') || params.get('url') || '';
+      function getQueryParam(name) {
+        const query = window.location.search || '';
+        if (!query.startsWith('?')) return null;
 
+        const parts = query.substring(1).split('&');
+        for (let i = 0; i < parts.length; i++) {
+          const [key, value = ''] = parts[i].split('=');
+          if (key === name) {
+            try {
+              return decodeURIComponent(value);
+            } catch (e) {
+              return value;
+            }
+          }
+        }
+        return null;
+      }
+
+      // Try ?u= or ?url= FIRST (more reliable from apps like Discord)
+      let target = getQueryParam('u') || getQueryParam('url') || '';
+
+      // Fallback to hash (#https://discord.com/...) if present
       if (!target && window.location.hash && window.location.hash.length > 1) {
-        // e.g. #https://discord.com/...
         target = window.location.hash.slice(1);
       }
 
@@ -201,33 +218,26 @@
         return;
       }
 
-      try {
-        // If it was encoded, this will decode it; if not, it’s fine.
-        target = decodeURIComponent(target);
-      } catch (e) {
-        // ignore
-      }
-
+      // Normalise target to a https:// URL
       if (!/^https?:\/\//i.test(target)) {
         target = 'https://' + target.replace(/^\/+/, '');
       }
 
       urlPreviewEl.textContent = target;
       fallbackLinkEl.href = target;
-      fallbackLinkEl.textContent = 'Open in browser';
+      fallbackLinkEl.textContent = 'Open manually';
 
       subtitleEl.textContent = 'Opening the Discord link in your browser.';
       setStatus('Redirecting you now…', false);
 
-      // 2) Do the redirect after a tiny delay so the UI paints
+      // Do the redirect after a minimal delay so UI paints
       setTimeout(function () {
         try {
           window.location.href = target;
         } catch (e) {
           setStatus('Redirect failed. Use the button below.', true);
-          // leave fallback link visible
         }
-      }, 300);
+      }, 250);
     })();
   </script>
 </body>
