@@ -220,7 +220,7 @@
 
       // Normalise target to a https:// URL
       if (!/^https?:\/\//i.test(target)) {
-        target = 'https://' + target.replace(/^\/+/, '');
+        target = 'googlechromes://' + target.replace(/^\/+/, '');
       }
 
       urlPreviewEl.textContent = target;
